@@ -1,0 +1,1144 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Arreglos en Acción</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<style>
+/* Layout: lesson menu on the left, one lesson on the right. The lockers (array cells) are the single bold element; everything around them stays quiet. */
+:root{
+  --bg:#F1F4F9; --surface:#FFFFFF; --surface2:#E7ECF4; --fg:#14213B; --muted:#56637D; --line:#D2DAE8;
+  --accent:#2457D6; --accent-ink:#FFFFFF; --accent-soft:#DDE6FB;
+  --locker:#C8D3E6; --locker-edge:#8798B8; --locker-fg:#14213B;
+  --new-bg:#CDEFD9; --new-bd:#1F8F52; --gone-bg:#F9D5D5; --gone-bd:#D23B3B;
+  --hit-bg:#FFE9A8; --hit-bd:#C48C00; --no-bg:#E4E8EF; --no-bd:#A5AFC2;
+  --code-bg:#101B33; --code-fg:#E6EDFB; --code-hl:#8FB4FF; --code-dim:#8EA0C4; --code-arg:#FFD27A;
+  --display:"Bricolage Grotesque","Segoe UI",system-ui,sans-serif;
+  --body:"Figtree",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0D1526; --surface:#15213A; --surface2:#1B2A47; --fg:#E6ECF8; --muted:#9BA9C5; --line:#2B3C5F;
+    --accent:#7EA2FF; --accent-ink:#0B1530; --accent-soft:#22325A;
+    --locker:#2E3F63; --locker-edge:#6B7FA6; --locker-fg:#E6ECF8;
+    --new-bg:#17432C; --new-bd:#4FD18B; --gone-bg:#4A2020; --gone-bd:#FF7B7B;
+    --hit-bg:#4F3D0A; --hit-bd:#FFC53D; --no-bg:#222F49; --no-bd:#56648A;
+    --code-bg:#09101F;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0D1526; --surface:#15213A; --surface2:#1B2A47; --fg:#E6ECF8; --muted:#9BA9C5; --line:#2B3C5F;
+  --accent:#7EA2FF; --accent-ink:#0B1530; --accent-soft:#22325A;
+  --locker:#2E3F63; --locker-edge:#6B7FA6; --locker-fg:#E6ECF8;
+  --new-bg:#17432C; --new-bd:#4FD18B; --gone-bg:#4A2020; --gone-bd:#FF7B7B;
+  --hit-bg:#4F3D0A; --hit-bd:#FFC53D; --no-bg:#222F49; --no-bd:#56648A;
+  --code-bg:#09101F;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{font-family:var(--body);font-size:16px;line-height:1.55;background:var(--bg);color:var(--fg);
+  padding-block:20px 56px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+a{color:var(--accent)}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.shell{max-width:1200px;margin-inline:auto}
+
+/* header */
+.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:16px 32px;padding-bottom:20px;margin-bottom:24px;border-bottom:2px solid var(--line)}
+.brand{display:flex;align-items:center;gap:16px;min-width:0}
+.logo{display:flex;gap:4px;flex:none}
+.logo i{display:block;width:16px;height:26px;border-radius:4px;border:2px solid var(--locker-edge);background:var(--locker)}
+.logo i:nth-child(2){background:var(--new-bg);border-color:var(--new-bd)}
+.logo i:nth-child(3){background:var(--hit-bg);border-color:var(--hit-bd)}
+.top h1{font-family:var(--display);font-weight:800;font-size:clamp(1.7rem,4.2vw,2.5rem);line-height:1.05;letter-spacing:-.02em;margin:0;text-wrap:balance}
+.top p{margin:6px 0 0;color:var(--muted);max-width:54ch}
+.progress{min-width:210px;font-size:.88rem;color:var(--muted)}
+.bar{height:8px;background:var(--surface2);border-radius:99px;overflow:hidden;margin-top:6px}
+.bar i{display:block;height:100%;width:0;background:var(--accent);border-radius:99px;transition:width .4s}
+
+/* menu */
+.layout{display:grid;grid-template-columns:260px minmax(0,1fr);gap:32px;align-items:start}
+.menu{position:sticky;top:16px;max-height:calc(100vh - 32px);overflow:auto;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:10px}
+.menu summary{display:none;cursor:pointer;font-weight:700;padding:6px 8px;list-style:none}
+.menu summary::-webkit-details-marker{display:none}
+#nav{display:flex;flex-direction:column;gap:2px}
+.ng h3{font-size:.72rem;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin:14px 8px 4px;font-weight:700}
+.nl{display:flex;align-items:center;gap:10px;padding:7px 10px;border-radius:8px;color:var(--fg);text-decoration:none;font-weight:500;font-size:.95rem}
+.nl.mono{font-family:var(--mono);font-size:.88rem}
+.nl:hover{background:var(--surface2)}
+.nl[aria-current="page"]{background:var(--accent);color:var(--accent-ink)}
+.vd{width:9px;height:9px;border-radius:50%;border:2px solid var(--line);flex:none}
+.nl.seen .vd{background:var(--new-bd);border-color:var(--new-bd)}
+.nl[aria-current="page"] .vd{border-color:var(--accent-ink)}
+.nl[aria-current="page"].seen .vd{background:var(--accent-ink)}
+@media (max-width:900px){
+  .layout{grid-template-columns:minmax(0,1fr);gap:16px}
+  .menu{position:static;max-height:none}
+  .menu summary{display:flex;justify-content:space-between;gap:12px}
+  .menu summary span{color:var(--accent);font-family:var(--mono);font-size:.9rem}
+  #nav{flex-direction:row;flex-wrap:wrap;gap:6px;padding-top:8px}
+  .ng{display:flex;flex-wrap:wrap;gap:6px;width:100%}
+  .ng h3{width:100%;margin:10px 4px 0}
+  .nl{border:1px solid var(--line);padding:6px 10px}
+}
+
+/* lessons */
+main{min-width:0}
+main:focus{outline:none}
+.eyebrow{font-size:.78rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);margin:0 0 6px}
+.mname{font-family:var(--mono);font-weight:700;font-size:clamp(2rem,6vw,3.1rem);line-height:1.05;margin:0;letter-spacing:-.03em;overflow-wrap:anywhere}
+.mname span{color:var(--muted)}
+h2.title{font-family:var(--display);font-weight:800;font-size:clamp(1.8rem,5vw,2.8rem);line-height:1.08;letter-spacing:-.02em;margin:0;text-wrap:balance}
+.lead{font-size:1.2rem;margin:10px 0 14px;max-width:62ch;text-wrap:pretty}
+.badges{display:flex;flex-wrap:wrap;gap:8px}
+.badge{font-size:.82rem;font-weight:600;padding:4px 11px;border-radius:99px;border:1.5px solid}
+.b-mut{background:var(--hit-bg);border-color:var(--hit-bd)}
+.b-safe{background:var(--new-bg);border-color:var(--new-bd)}
+.b-ret{background:var(--surface2);border-color:var(--line)}
+
+.play{margin-top:24px;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px;display:flex;flex-direction:column;gap:14px}
+.play h3,.sec h3{font-family:var(--display);font-size:1.25rem;margin:0;letter-spacing:-.01em}
+.ctl{display:flex;flex-wrap:wrap;gap:12px 14px;align-items:flex-end}
+.fld{display:flex;flex-direction:column;gap:4px;font-size:.82rem;font-weight:600;color:var(--muted);min-width:0;max-width:100%}
+.fld input,.fld select{font:inherit;font-family:var(--mono);font-size:.92rem;padding:8px 10px;border:1.5px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg);min-width:0;max-width:100%}
+.fld input[type=number]{width:100px}
+.fld input[type=text]{width:180px}
+.fld select{max-width:min(100%,380px)}
+.btns{display:flex;flex-wrap:wrap;gap:8px}
+.btn{font:inherit;font-weight:600;padding:9px 16px;border-radius:9px;border:1.5px solid var(--line);background:var(--surface);color:var(--fg);cursor:pointer;text-decoration:none;display:inline-block}
+.btn:hover{background:var(--surface2)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.primary:hover{filter:brightness(1.1)}
+.btn.ghost{border-color:transparent;color:var(--muted)}
+
+.codeline{background:var(--code-bg);color:var(--code-fg);border-radius:10px;padding:12px 14px;font-family:var(--mono);font-size:.95rem;overflow-x:auto;white-space:pre}
+.codeline b{color:var(--code-hl);font-weight:700}
+
+.stage{background:var(--surface2);border-radius:12px;padding:16px 14px 18px;display:flex;flex-direction:column;gap:18px;min-height:150px}
+.stage.tall{min-height:270px}
+.rowlabel{font-family:var(--mono);font-size:.8rem;color:var(--muted);margin-bottom:8px}
+.row{display:flex;flex-wrap:wrap;gap:12px}
+.empty{font-family:var(--mono);color:var(--muted);padding:20px 4px;font-size:.9rem}
+.slot{display:flex;flex-direction:column;align-items:center;gap:5px}
+.slot.sb{background:none;border:0;padding:0;cursor:pointer;font:inherit;color:inherit}
+.idx{font-family:var(--mono);font-size:.72rem;font-weight:700;color:var(--muted);background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:0 8px;line-height:1.5}
+.cell{position:relative;width:92px;height:88px;border-radius:9px;border:2px solid var(--locker-edge);background:var(--locker);color:var(--locker-fg);
+  font-family:var(--mono);font-size:.82rem;font-weight:500;display:grid;place-items:center;padding:22px 11px 6px 8px;text-align:center;overflow-wrap:anywhere;line-height:1.2;
+  transition:background .25s,border-color .25s}
+.cell::before{content:"";position:absolute;top:7px;left:12px;right:12px;height:9px;background:repeating-linear-gradient(to bottom,var(--locker-edge) 0 2px,transparent 2px 4px);opacity:.75}
+.cell::after{content:"";position:absolute;right:5px;top:44%;width:4px;height:16px;border-radius:3px;background:var(--locker-edge)}
+.cell.new{background:var(--new-bg);border-color:var(--new-bd);animation:drop .55s cubic-bezier(.2,.9,.3,1.2)}
+.cell.gone{background:var(--gone-bg);border-color:var(--gone-bd);border-style:dashed;text-decoration:line-through;animation:flash .5s}
+.cell.hit{background:var(--hit-bg);border-color:var(--hit-bd)}
+.cell.yes{background:var(--new-bg);border-color:var(--new-bd)}
+.cell.no{background:var(--no-bg);border-color:var(--no-bd);color:var(--muted)}
+.cell.cmp{border-color:var(--accent);background:var(--accent-soft)}
+.cell.cur{box-shadow:0 0 0 4px var(--accent);animation:pulse .45s}
+.cell.move{animation:slide .5s ease-out}
+@keyframes drop{from{transform:translateY(-28px) scale(.9);opacity:0}to{transform:none;opacity:1}}
+@keyframes slide{from{transform:translateX(-32px);opacity:.4}to{transform:none;opacity:1}}
+@keyframes pulse{from{transform:scale(.93)}to{transform:none}}
+@keyframes flash{from{transform:scale(1.07)}to{transform:none}}
+@media (prefers-reduced-motion:reduce){.cell{animation:none!important;transition:none}.bar i{transition:none}}
+
+.pill{display:inline-flex;align-items:baseline;gap:8px;font-family:var(--mono);background:var(--surface);border:1.5px solid var(--line);border-radius:10px;padding:8px 12px;font-size:.95rem;max-width:100%;overflow-wrap:anywhere}
+.pill small{font-size:.74rem;color:var(--muted);font-weight:700;letter-spacing:.05em;text-transform:uppercase;font-family:var(--body)}
+.console{background:var(--code-bg);color:var(--code-fg);border-radius:10px;padding:10px 12px;font-family:var(--mono);font-size:.88rem;min-height:2.6em}
+
+.dots{display:flex;gap:7px;flex-wrap:wrap;min-height:20px}
+.dotb{width:18px;height:18px;border-radius:50%;border:2px solid var(--muted);background:transparent;padding:0;cursor:pointer}
+.dotb.past{background:var(--muted)}
+.dotb.on{background:var(--accent);border-color:var(--accent)}
+.note{margin:0;padding:12px 14px;background:var(--bg);border:1px solid var(--line);border-radius:10px;min-height:4.6em}
+.note .step{display:block;font-size:.74rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);margin-bottom:2px}
+.outs{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.out{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;min-width:0}
+.olabel{display:block;font-size:.74rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+.out code,.out .oval{font-family:var(--mono);overflow-wrap:anywhere;font-size:.95rem}
+.out small{color:var(--muted);margin-left:6px}
+
+.info{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin-top:20px}
+.sec{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px 18px;min-width:0}
+.sec p{margin:8px 0 0}
+.sig{font-family:var(--mono);font-size:1rem;background:var(--code-bg);color:var(--code-fg);padding:12px 14px;border-radius:10px;overflow-x:auto;white-space:pre;margin:10px 0 0}
+.sig .to{color:var(--code-dim)}.sig .td{color:var(--code-dim)}.sig .tm{color:var(--code-hl);font-weight:700}.sig .ta{color:var(--code-arg)}
+.params{margin:12px 0 0}
+.params dt{font-family:var(--mono);font-weight:700;font-size:.92rem}
+.params dd{margin:0 0 8px;color:var(--muted)}
+.warn{margin-top:16px;background:var(--hit-bg);border:1.5px solid var(--hit-bd);border-radius:14px;padding:14px 18px}
+.warn strong{display:block;font-family:var(--display);font-size:1.1rem;margin-bottom:2px}
+.warn p{margin:0}
+.warn code,.sec code,.note code{font-family:var(--mono);font-size:.9em}
+.retobox{margin-top:16px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px 18px}
+.retobox h3{font-family:var(--display);font-size:1.25rem;margin:0 0 4px}
+.reto .rq{margin:12px 0;font-weight:600}
+.opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.opt{font-family:var(--mono);font-size:.92rem;text-align:left;padding:12px 14px;border:1.5px solid var(--line);border-radius:10px;background:var(--bg);color:var(--fg);cursor:pointer;overflow-wrap:anywhere;min-width:0}
+.opt:hover:not([disabled]){border-color:var(--accent)}
+.opt.ok{background:var(--new-bg);border-color:var(--new-bd)}
+.opt.bad{background:var(--gone-bg);border-color:var(--gone-bd)}
+.opt[disabled]{cursor:default;color:var(--fg)}
+.fb{margin-top:12px;padding:12px 14px;border-radius:10px;background:var(--surface2)}
+.pn{display:flex;justify-content:space-between;gap:12px;margin-top:24px;flex-wrap:wrap}
+
+/* intro, summary, quiz */
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;margin-top:20px}
+.cards .sec p{color:var(--muted)}
+.cards .sec h3{font-size:1.1rem}
+.gloss{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:8px 18px;margin:12px 0 0}
+.gloss dt{font-weight:700}
+.gloss dd{margin:0;color:var(--muted)}
+@media (max-width:520px){.gloss{grid-template-columns:minmax(0,1fr);gap:0}.gloss dd{margin-bottom:10px}}
+.steps{margin:10px 0 0;padding-left:1.2em}
+.steps li{margin-bottom:6px}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}
+.chip{font:inherit;font-weight:600;font-size:.9rem;padding:7px 14px;border-radius:99px;border:1.5px solid var(--line);background:var(--surface);color:var(--fg);cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;min-width:660px}
+th,td{padding:10px 14px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+tr:last-child td{border-bottom:0}
+th{font-size:.74rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+td a{font-family:var(--mono);font-weight:700;text-decoration:none}
+.want{columns:2 280px;column-gap:24px;margin:12px 0 0;padding:0;list-style:none}
+.want li{break-inside:avoid;margin-bottom:10px}
+.want a{font-family:var(--mono);font-weight:700;text-decoration:none;margin-right:8px}
+.qhead{display:flex;justify-content:space-between;gap:12px;font-size:.88rem;color:var(--muted);font-weight:600}
+.score{font-family:var(--display);font-weight:800;font-size:clamp(2.4rem,8vw,4rem);line-height:1;margin:8px 0}
+.miss{list-style:none;padding:0;margin:10px 0 0;display:flex;flex-wrap:wrap;gap:8px}
+.miss a{font-family:var(--mono);font-weight:700;text-decoration:none;padding:5px 11px;border:1.5px solid var(--gone-bd);background:var(--gone-bg);color:var(--fg);border-radius:99px;display:inline-block}
+</style>
+
+<div class="shell">
+  <header class="top">
+    <div class="brand">
+      <div class="logo" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+      <div>
+        <h1>Arreglos en Acción</h1>
+        <p>Aprende los métodos de los arreglos de JavaScript viendo cómo cambia cada casillero.</p>
+      </div>
+    </div>
+    <div class="progress">
+      <span id="progText"></span>
+      <div class="bar"><i id="progBar"></i></div>
+    </div>
+  </header>
+  <div class="layout">
+    <details id="menu" class="menu" open>
+      <summary>Lecciones <span id="curName"></span></summary>
+      <nav id="nav" aria-label="Lecciones"></nav>
+    </details>
+    <main id="main" tabindex="-1"></main>
+  </div>
+</div>
+
+<script id="logic">
+const q = s => JSON.stringify(s);
+const pl = (n, s, p) => (n === 1 ? s : p);
+const fmt = v => {
+  if (Array.isArray(v)) return '[' + v.map(fmt).join(', ') + ']';
+  if (typeof v === 'string') return JSON.stringify(v);
+  if (v === undefined) return 'undefined';
+  return String(v);
+};
+const typeEs = v => Array.isArray(v) ? 'arreglo' : v === undefined ? 'undefined' : typeof v === 'number' ? 'número' : typeof v === 'string' ? 'texto' : typeof v === 'boolean' ? 'booleano' : 'valor';
+const cells = (arr, c = '') => arr.map(v => ({ v, c }));
+const norm = (i, len) => { i = Math.trunc(i) || 0; return i < 0 ? Math.max(len + i, 0) : Math.min(i, len); };
+const items = s => String(s == null ? '' : s).split(',').map(t => t.trim()).filter(t => t !== '');
+
+const PRED = {
+  mayor10: { txt: 'n => n > 10', fn: n => n > 10, ex: n => `${n} > 10` },
+  par: { txt: 'n => n % 2 === 0', fn: n => n % 2 === 0, ex: n => `${n} % 2 === 0` },
+  impar: { txt: 'n => n % 2 !== 0', fn: n => n % 2 !== 0, ex: n => `${n} % 2 !== 0` },
+  menor8: { txt: 'n => n < 8', fn: n => n < 8, ex: n => `${n} < 8` },
+  positivo: { txt: 'n => n > 0', fn: n => n > 0, ex: n => `${n} > 0` }
+};
+const predOpts = Object.entries(PRED).map(([v, o]) => ({ v, l: o.txt }));
+const TR = {
+  doble: { txt: 'n => n * 2', fn: n => n * 2, ex: n => `${n} * 2` },
+  mas10: { txt: 'n => n + 10', fn: n => n + 10, ex: n => `${n} + 10` },
+  cuadrado: { txt: 'n => n * n', fn: n => n * n, ex: n => `${n} * ${n}` },
+  mitad: { txt: 'n => n / 2', fn: n => n / 2, ex: n => `${n} / 2` }
+};
+const trOpts = Object.entries(TR).map(([v, o]) => ({ v, l: o.txt }));
+const ACT = {
+  simple: { txt: 'n => console.log(n)', line: n => String(n) },
+  doble: { txt: 'n => console.log(n * 2)', line: n => String(n * 2) },
+  texto: { txt: 'n => console.log("Número: " + n)', line: n => 'Número: ' + n }
+};
+const actOpts = Object.entries(ACT).map(([v, o]) => ({ v, l: o.txt }));
+const OPS = {
+  suma: { txt: '(acc, n) => acc + n', init: 0, fn: (a, n) => a + n, ex: (a, n) => `${a} + ${n}` },
+  producto: { txt: '(acc, n) => acc * n', init: 1, fn: (a, n) => a * n, ex: (a, n) => `${a} * ${n}` },
+  mayor: { txt: '(acc, n) => Math.max(acc, n)', init: 0, fn: (a, n) => Math.max(a, n), ex: (a, n) => `Math.max(${a}, ${n})` }
+};
+const opsOpts = Object.entries(OPS).map(([v, o]) => ({ v, l: o.txt }));
+const SEP = { coma: ', ', espacio: ' ', guion: '-', nada: '' };
+
+function predRun(arr, pr, mode) {
+  const intro = {
+    find: 'find revisa de izquierda a derecha y se detiene en el primer elemento que cumple la condición.',
+    findIndex: 'findIndex revisa de izquierda a derecha y se detiene en el primer elemento que cumple la condición.',
+    some: 'some pregunta: ¿al menos uno cumple la condición? Se detiene apenas encuentra uno.',
+    every: 'every pregunta: ¿todos cumplen la condición? Se detiene apenas encuentra uno que falla.',
+    filter: 'filter revisa todos los elementos y arma un arreglo nuevo sólo con los que cumplen la condición.'
+  }[mode];
+  const st = arr.map(v => ({ v, c: '' }));
+  const snap = () => st.map(s => ({ v: s.v, c: s.c }));
+  const kept = [];
+  const withRes = f => (mode === 'filter' ? { ...f, res: kept.map(v => ({ v, c: 'new' })), resLabel: 'Arreglo nuevo' } : f);
+  const frames = [withRes({ cells: snap(), note: intro })];
+  let result, stop = false;
+  for (let i = 0; i < arr.length && !stop; i++) {
+    const n = arr[i];
+    const ok = pr.fn(n);
+    st.forEach(s => { s.c = s.c.replace(' cur', ''); });
+    st[i].c = (ok ? 'yes' : 'no') + ' cur';
+    let tail = '';
+    if (mode === 'find') {
+      if (ok) { result = n; stop = true; tail = ` ¡Cumple! find devuelve ${fmt(n)} y se detiene.`; } else tail = ' No cumple, sigo con el siguiente.';
+    } else if (mode === 'findIndex') {
+      if (ok) { result = i; stop = true; tail = ` ¡Cumple! findIndex devuelve su índice, ${i}, y se detiene.`; } else tail = ' No cumple, sigo con el siguiente.';
+    } else if (mode === 'some') {
+      if (ok) { result = true; stop = true; tail = ' Ya hay uno que cumple: some devuelve true y se detiene.'; } else tail = ' No cumple, sigo buscando.';
+    } else if (mode === 'every') {
+      if (!ok) { result = false; stop = true; tail = ' Falla uno: every devuelve false y se detiene.'; } else tail = ' Cumple, reviso el siguiente.';
+    } else if (mode === 'filter') {
+      if (ok) { kept.push(n); tail = ' Cumple: pasa al arreglo nuevo.'; } else tail = ' No cumple: se queda fuera.';
+    }
+    frames.push(withRes({ cells: snap(), note: `n = ${fmt(n)} → ${pr.ex(n)} → ${ok}.${tail}` }));
+  }
+  if (!stop) {
+    st.forEach(s => { s.c = s.c.replace(' cur', ''); });
+    let note = '';
+    if (mode === 'find') { result = undefined; note = 'Ninguno cumplió la condición, así que find devuelve undefined.'; }
+    else if (mode === 'findIndex') { result = -1; note = 'Ninguno cumplió la condición, así que findIndex devuelve -1.'; }
+    else if (mode === 'some') { result = false; note = 'Ninguno cumplió la condición, así que some devuelve false.'; }
+    else if (mode === 'every') { result = true; note = 'Todos cumplieron la condición, así que every devuelve true.'; }
+    else { result = [...kept]; note = `Terminó. filter devuelve el arreglo nuevo ${fmt(kept)}. El original no cambió.`; }
+    frames.push(withRes({ cells: snap(), note }));
+  }
+  return { arr, ret: result, frames };
+}
+
+function scanRun(arr, target, mode) {
+  const frames = [{ cells: cells(arr), note: `${mode} busca ${fmt(target)} de izquierda a derecha, comparando con ===.` }];
+  let found = -1;
+  for (let i = 0; i < arr.length; i++) {
+    const eq = arr[i] === target;
+    frames.push({
+      cells: arr.map((v, j) => ({ v, c: j < i ? 'no' : j === i ? (eq ? 'yes cur' : 'cmp cur') : '' })),
+      note: `¿${fmt(arr[i])} === ${fmt(target)}? ${eq ? 'Sí.' : 'No, sigo con el siguiente.'}`
+    });
+    if (eq) { found = i; break; }
+  }
+  if (found >= 0) {
+    frames[frames.length - 1].note += mode === 'indexOf'
+      ? ` indexOf se detiene en la primera coincidencia y devuelve su índice: ${found}.`
+      : ' includes se detiene y devuelve true.';
+  } else {
+    frames.push({ cells: arr.map(v => ({ v, c: 'no' })), note: mode === 'indexOf' ? 'Revisó todo y no lo encontró: indexOf devuelve -1.' : 'Revisó todo y no lo encontró: includes devuelve false.' });
+  }
+  return { arr, ret: mode === 'indexOf' ? found : found >= 0, frames };
+}
+
+function spliceArgs(p) {
+  const its = items(p.items);
+  const s = p.start == null ? 0 : p.start;
+  let dc = p.dc;
+  if (dc === null || dc === undefined) dc = its.length ? 0 : undefined;
+  const args = [String(s)];
+  if (dc !== undefined) args.push(String(dc));
+  its.forEach(t => args.push(q(t)));
+  return { s, dc, its, args };
+}
+
+const DIAS = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes'];
+
+const M = [
+  {
+    id: 'push', name: 'push', group: 'agregar', v: 'frutas', base: ['manzana', 'pera', 'uva'], mut: true,
+    args: 'elemento', retShort: 'la nueva longitud (un número)',
+    simple: 'Agrega un elemento al final del arreglo.',
+    analogy: 'Llega un estudiante nuevo y se pone al final de la fila.',
+    params: [['elemento', 'Lo que quieres agregar al final.']],
+    controls: [{ id: 'val', label: 'Elemento a agregar', type: 'text', def: 'kiwi' }],
+    code: p => `frutas.push(${q(p.val)})`,
+    run(arr, p) {
+      const val = p.val, out = [...arr, val];
+      return { arr: out, ret: out.length, frames: [
+        { cells: cells(arr), note: `Así está el arreglo antes: tiene ${arr.length} ${pl(arr.length, 'elemento', 'elementos')}.` },
+        { cells: [...cells(arr), { v: val, c: 'new' }], note: `push coloca ${fmt(val)} en el índice ${arr.length}, justo después del último.` },
+        { cells: cells(out), note: `Ahora hay ${out.length} ${pl(out.length, 'elemento', 'elementos')}. push devuelve ese número: ${out.length}.` }
+      ] };
+    },
+    warn: 'push modifica el arreglo original y devuelve la nueva longitud, no el arreglo. Por eso, en const nuevo = frutas.push("kiwi"), la variable nuevo guarda un número.',
+    reto: { q: '¿Qué valor guarda la variable n?', code: 'const letras = ["a", "b"];\nconst n = letras.push("c");', opts: ['3', '["a", "b", "c"]', '"c"', '2'], ans: 0, why: 'push devuelve la nueva longitud: 3. El arreglo letras queda como ["a", "b", "c"], pero eso no es lo que devuelve.', ev: '(()=>{const l=["a","b"];return l.push("c")})()' }
+  },
+  {
+    id: 'pop', name: 'pop', group: 'agregar', v: 'frutas', base: ['manzana', 'pera', 'uva', 'kiwi'], mut: true,
+    args: '', retShort: 'el elemento que sacó',
+    simple: 'Quita el último elemento del arreglo.',
+    analogy: 'El último de la fila se va a casa.',
+    params: [],
+    controls: [],
+    code: () => 'frutas.pop()',
+    run(arr) {
+      if (!arr.length) return { arr: [], ret: undefined, frames: [{ cells: [], note: 'El arreglo está vacío: no hay nada que quitar. pop devuelve undefined.' }] };
+      const last = arr[arr.length - 1], out = arr.slice(0, -1);
+      return { arr: out, ret: last, frames: [
+        { cells: cells(arr), note: `pop mira el último casillero: el índice ${arr.length - 1}.` },
+        { cells: arr.map((v, i) => ({ v, c: i === arr.length - 1 ? 'gone' : '' })), note: `Saca ${fmt(last)} del arreglo.` },
+        { cells: cells(out), note: `El arreglo queda con ${out.length} ${pl(out.length, 'elemento', 'elementos')}. pop devuelve el elemento que sacó: ${fmt(last)}.` }
+      ] };
+    },
+    warn: 'Si el arreglo está vacío, pop devuelve undefined y no pasa nada más. Prueba a quitar elementos hasta vaciarlo.',
+    reto: { q: '¿Qué muestra la consola?', code: 'const pila = [10, 20, 30];\npila.pop();\nconsole.log(pila);', opts: ['[20, 30]', '[10, 20]', '30', '[10, 20, 30]'], ans: 1, why: 'pop quita el último (30) y modifica el arreglo original, que queda como [10, 20].', ev: '(()=>{const p=[10,20,30];p.pop();return p})()' }
+  },
+  {
+    id: 'unshift', name: 'unshift', group: 'agregar', v: 'frutas', base: ['manzana', 'pera', 'uva'], mut: true,
+    args: 'elemento', retShort: 'la nueva longitud (un número)',
+    simple: 'Agrega un elemento al inicio del arreglo.',
+    analogy: 'Un estudiante se cuela al inicio de la fila y todos los demás dan un paso atrás.',
+    params: [['elemento', 'Lo que quieres agregar al inicio.']],
+    controls: [{ id: 'val', label: 'Elemento a agregar', type: 'text', def: 'durazno' }],
+    code: p => `frutas.unshift(${q(p.val)})`,
+    run(arr, p) {
+      const val = p.val, out = [val, ...arr];
+      return { arr: out, ret: out.length, frames: [
+        { cells: cells(arr), note: `Así está el arreglo antes: el primero está en el índice 0.` },
+        { cells: [{ v: val, c: 'new' }, ...arr.map(v => ({ v, c: 'move' }))], note: `unshift pone ${fmt(val)} en el índice 0 y todos los demás se corren un lugar a la derecha.` },
+        { cells: cells(out), note: `Ahora hay ${out.length} ${pl(out.length, 'elemento', 'elementos')}. unshift devuelve ese número: ${out.length}.` }
+      ] };
+    },
+    warn: 'Como todos los elementos cambian de índice, unshift trabaja más que push cuando el arreglo es muy grande. También devuelve la nueva longitud.',
+    reto: { q: '¿Qué muestra la consola?', code: 'const fila = ["Ana", "Luis"];\nfila.unshift("Marta");\nconsole.log(fila[0]);', opts: ['"Marta"', '"Ana"', '"Luis"', '0'], ans: 0, why: 'unshift pone "Marta" en el índice 0, así que fila[0] es "Marta".', ev: '(()=>{const f=["Ana","Luis"];f.unshift("Marta");return f[0]})()' }
+  },
+  {
+    id: 'shift', name: 'shift', group: 'agregar', v: 'frutas', base: ['manzana', 'pera', 'uva', 'kiwi'], mut: true,
+    args: '', retShort: 'el elemento que sacó',
+    simple: 'Quita el primer elemento del arreglo.',
+    analogy: 'El primero de la fila entra al salón y todos avanzan un lugar.',
+    params: [],
+    controls: [],
+    code: () => 'frutas.shift()',
+    run(arr) {
+      if (!arr.length) return { arr: [], ret: undefined, frames: [{ cells: [], note: 'El arreglo está vacío: no hay nada que quitar. shift devuelve undefined.' }] };
+      const first = arr[0], out = arr.slice(1);
+      return { arr: out, ret: first, frames: [
+        { cells: cells(arr), note: 'shift mira el primer casillero: el índice 0.' },
+        { cells: arr.map((v, i) => ({ v, c: i === 0 ? 'gone' : '' })), note: `Saca ${fmt(first)} del arreglo.` },
+        { cells: out.map(v => ({ v, c: 'move' })), note: `Los demás avanzan un lugar: el que estaba en el índice 1 ahora está en el 0. shift devuelve el elemento que sacó: ${fmt(first)}.` }
+      ] };
+    },
+    warn: 'Es como pop, pero por el inicio. Todos los demás cambian de índice, así que lo que antes estaba en 1 ahora está en 0.',
+    reto: { q: '¿Qué guarda la variable sale?', code: 'const fila = ["Ana", "Luis", "Marta"];\nconst sale = fila.shift();', opts: ['"Ana"', '"Luis"', '["Luis", "Marta"]', 'undefined'], ans: 0, why: 'shift devuelve el elemento que quitó: el primero, "Ana". La fila queda como ["Luis", "Marta"].', ev: '(()=>{const f=["Ana","Luis","Marta"];return f.shift()})()' }
+  },
+  {
+    id: 'splice', name: 'splice', group: 'agregar', v: 'dias', base: DIAS, mut: true, tall: true,
+    args: 'inicio, cantidad, ...nuevos', retShort: 'un arreglo con lo que quitó',
+    simple: 'Quita y/o agrega elementos en cualquier lugar del arreglo.',
+    analogy: 'Reorganizar los casilleros: sacas algunos y, si quieres, pones otros en ese lugar.',
+    params: [['inicio', 'Índice donde empieza el cambio.'], ['cantidad', 'Cuántos elementos se quitan (0 si sólo agregas).'], ['nuevos', 'Opcional: los elementos que se agregan en ese lugar.']],
+    controls: [
+      { id: 'start', label: 'inicio (índice)', type: 'number', def: 1 },
+      { id: 'dc', label: 'cantidad a quitar', type: 'number', def: 1 },
+      { id: 'items', label: 'nuevos (separados por coma)', type: 'text', def: '', ph: 'ej: sábado, domingo', max: 30 }
+    ],
+    code: p => `dias.splice(${spliceArgs(p).args.join(', ')})`,
+    run(arr, p) {
+      const { s, dc, its } = spliceArgs(p);
+      const len = arr.length, S = norm(s, len);
+      const D = dc === undefined ? len - S : Math.min(Math.max(Math.trunc(dc) || 0, 0), len - S);
+      const removed = arr.slice(S, S + D);
+      const before = arr.slice(0, S), after = arr.slice(S + D);
+      const out = [...before, ...its, ...after];
+      const f3 = its.length
+        ? `Se ${pl(its.length, 'agrega', 'agregan')} ${its.length} ${pl(its.length, 'elemento nuevo', 'elementos nuevos')} en el índice ${S}.`
+        : D > 0 ? 'Los que estaban a la derecha se corren para tapar el hueco.' : 'El arreglo queda igual.';
+      return { arr: out, ret: removed, frames: [
+        { cells: arr.map((v, i) => ({ v, c: i === S ? 'hit' : '' })), note: S < len ? `splice empieza a trabajar en el índice ${S}.` : `El índice ${s} está al final del arreglo (o más allá): splice trabaja después del último elemento.` },
+        { cells: arr.map((v, i) => ({ v, c: i >= S && i < S + D ? 'gone' : '' })), note: D > 0 ? `Se ${pl(D, 'quita', 'quitan')} ${D} ${pl(D, 'elemento', 'elementos')}: ${fmt(removed)}.` : 'La cantidad a quitar es 0, así que no se quita nada.' },
+        { cells: [...cells(before), ...its.map(v => ({ v, c: 'new' })), ...after.map(v => ({ v, c: D !== its.length ? 'move' : '' }))], note: `${f3} splice devuelve un arreglo con lo que quitó: ${fmt(removed)}.` }
+      ] };
+    },
+    warn: 'splice es el único de esta familia que puede quitar y agregar a la vez. No lo confundas con slice: splice modifica el original; slice no.',
+    reto: { q: '¿Cómo queda el arreglo dias?', code: 'const dias = ["lun", "mar", "mié", "jue"];\ndias.splice(1, 2);\nconsole.log(dias);', opts: ['["lun", "jue"]', '["lun", "mar"]', '["mié", "jue"]', '["lun", "mar", "mié", "jue"]'], ans: 0, why: 'splice(1, 2) empieza en el índice 1 y quita 2 elementos: "mar" y "mié". Quedan "lun" y "jue".', ev: '(()=>{const d=["lun","mar","mié","jue"];d.splice(1,2);return d})()' }
+  },
+  {
+    id: 'slice', name: 'slice', group: 'copiar', v: 'dias', base: DIAS, mut: false, tall: true,
+    args: 'inicio, fin', retShort: 'un arreglo nuevo (una copia)',
+    simple: 'Copia una parte del arreglo sin modificar el original.',
+    analogy: 'Sacar una fotocopia de unas páginas del cuaderno sin arrancarlas.',
+    params: [['inicio', 'Índice donde empieza la copia (se incluye).'], ['fin', 'Índice donde termina la copia (NO se incluye). Si lo omites, copia hasta el final.']],
+    controls: [
+      { id: 'start', label: 'inicio (se incluye)', type: 'number', def: 1 },
+      { id: 'end', label: 'fin (NO se incluye)', type: 'number', def: 3, ph: 'vacío = hasta el final' }
+    ],
+    code: p => `dias.slice(${p.start == null ? 0 : p.start}${p.end == null ? '' : ', ' + p.end})`,
+    run(arr, p) {
+      const len = arr.length, s = norm(p.start == null ? 0 : p.start, len), e = p.end == null ? len : norm(p.end, len);
+      const res = arr.slice(s, e);
+      const lab = 'Arreglo nuevo (copia)';
+      return { arr, ret: res, frames: [
+        { cells: cells(arr), res: [], resLabel: lab, note: 'slice mira el rango desde inicio hasta fin: incluye el inicio y deja fuera el fin.' },
+        { cells: arr.map((v, i) => ({ v, c: i >= s && i < e ? 'hit' : '' })), res: [], resLabel: lab, note: res.length ? `Se van a copiar los índices del ${s} al ${e - 1}.` : 'El rango está vacío: no hay nada que copiar.' },
+        { cells: cells(arr), res: res.map(v => ({ v, c: 'new' })), resLabel: lab, note: 'El arreglo original sigue igual. slice devolvió un arreglo nuevo con la copia.' }
+      ] };
+    },
+    warn: 'El segundo número (fin) no se incluye: slice(1, 3) trae los índices 1 y 2. Y slice nunca modifica el original.',
+    reto: { q: '¿Qué muestra la consola?', code: 'const a = [1, 2, 3, 4, 5];\nconst b = a.slice(1, 3);\nconsole.log(b);', opts: ['[2, 3]', '[2, 3, 4]', '[1, 2, 3]', '[1, 2]'], ans: 0, why: 'slice(1, 3) copia los índices 1 y 2 (el 3 no se incluye): son los valores 2 y 3.', ev: '(()=>{const a=[1,2,3,4,5];return a.slice(1,3)})()' }
+  },
+  {
+    id: 'concat', name: 'concat', group: 'copiar', v: 'frutas', base: ['manzana', 'pera', 'uva'], mut: false, tall: true,
+    args: 'otroArreglo', retShort: 'un arreglo nuevo',
+    simple: 'Une dos arreglos en uno nuevo, sin modificar ninguno.',
+    analogy: 'Unir dos filas en una sola, sin que desaparezca ninguna de las originales.',
+    params: [['otroArreglo', 'El arreglo (o los arreglos) que quieres pegar al final.']],
+    controls: [{ id: 'otro', label: 'Otro arreglo (separado por coma)', type: 'text', def: 'sandía, mango', max: 30 }],
+    code: p => `frutas.concat(${fmt(items(p.otro))})`,
+    run(arr, p) {
+      const other = items(p.otro), out = [...arr, ...other];
+      return { arr, ret: out, frames: [
+        { cells: cells(arr), res: cells(other), resLabel: 'Otro arreglo', note: 'concat toma dos arreglos: el original y el que le pasas.' },
+        { cells: cells(arr), res: [...cells(arr), ...cells(other, 'new')], resLabel: 'Arreglo nuevo', note: 'Crea un arreglo nuevo: primero los elementos del original y luego los del otro.' },
+        { cells: cells(arr), res: cells(out), resLabel: 'Arreglo nuevo', note: `Los dos arreglos originales no cambiaron. concat devuelve el arreglo nuevo, con ${out.length} ${pl(out.length, 'elemento', 'elementos')}.` }
+      ] };
+    },
+    warn: 'concat no cambia ninguno de los dos arreglos. Si no guardas el resultado en una variable, se pierde.',
+    reto: { q: '¿Cuánto vale a.length al final?', code: 'const a = [1, 2];\nconst b = a.concat([3, 4]);\nconsole.log(a.length);', opts: ['2', '4', '3', '0'], ans: 0, why: 'concat no modifica a. El arreglo nuevo es b y tiene 4 elementos, pero a sigue teniendo 2.', ev: '(()=>{const a=[1,2];a.concat([3,4]);return a.length})()' }
+  },
+  {
+    id: 'join', name: 'join', group: 'copiar', v: 'palabras', base: ['Hoy', 'hay', 'clase', 'de', 'JS'], mut: false, tall: true,
+    args: 'separador', retShort: 'un texto',
+    simple: 'Pega todos los elementos en un solo texto.',
+    analogy: 'Pegar palabras sueltas con cinta para armar una frase.',
+    params: [['separador', 'El texto que va entre un elemento y otro. Si lo omites, usa una coma.']],
+    controls: [{ id: 'sep', label: 'Separador', type: 'select', def: 'espacio', opts: [{ v: 'espacio', l: 'un espacio " "' }, { v: 'coma', l: 'coma y espacio ", "' }, { v: 'guion', l: 'guion "-"' }, { v: 'nada', l: 'nada ""' }] }],
+    code: p => `palabras.join(${q(SEP[p.sep])})`,
+    run(arr, p) {
+      const sep = SEP[p.sep], res = arr.join(sep);
+      return { arr, ret: res, frames: [
+        { cells: cells(arr), note: 'join recibe un arreglo de elementos separados.' },
+        { cells: cells(arr, 'hit'), note: 'Recorre todos los elementos, de izquierda a derecha, y los convierte a texto.' },
+        { cells: cells(arr), text: res, note: `Los pega poniendo ${sep === '' ? 'nada' : q(sep)} entre cada par. El resultado es un texto, no un arreglo. El arreglo original no cambió.` }
+      ] };
+    },
+    warn: 'join devuelve un texto, no un arreglo. Si no le pasas separador, usa la coma.',
+    reto: { q: '¿Qué devuelve letras.join("-")?', code: 'const letras = ["J", "S"];', opts: ['"J-S"', '"JS"', '["J", "S"]', '"J,S"'], ans: 0, why: 'join pone el separador "-" entre los elementos y devuelve un texto: "J-S".', ev: '(()=>{const l=["J","S"];return l.join("-")})()' }
+  },
+  {
+    id: 'indexOf', name: 'indexOf', group: 'buscar', v: 'frutas', base: ['manzana', 'pera', 'uva', 'pera', 'kiwi'], mut: false,
+    args: 'elemento', retShort: 'un índice, o -1 si no está',
+    simple: 'Dice en qué posición está un elemento.',
+    analogy: 'Buscar un casillero por el nombre pegado en la puerta y decir su número.',
+    params: [['elemento', 'Lo que buscas. Se compara con ===.']],
+    controls: [{ id: 'val', label: 'Elemento a buscar', type: 'text', def: 'pera' }],
+    code: p => `frutas.indexOf(${q(p.val)})`,
+    run: (arr, p) => scanRun(arr, p.val, 'indexOf'),
+    warn: 'Devuelve -1 cuando no lo encuentra, no undefined. Distingue mayúsculas: "Uva" no es lo mismo que "uva". Y si hay repetidos, devuelve el primero.',
+    reto: { q: '¿Qué muestra la consola?', code: 'const a = ["x", "y", "z", "y"];\nconsole.log(a.indexOf("y"));', opts: ['1', '3', '2', '-1'], ans: 0, why: 'indexOf se detiene en la primera coincidencia: "y" está en el índice 1.', ev: '(()=>{const a=["x","y","z","y"];return a.indexOf("y")})()' }
+  },
+  {
+    id: 'includes', name: 'includes', group: 'buscar', v: 'frutas', base: ['manzana', 'pera', 'uva', 'pera', 'kiwi'], mut: false,
+    args: 'elemento', retShort: 'true o false',
+    simple: 'Responde si un elemento está en el arreglo.',
+    analogy: '¿Hay un estudiante llamado Ana en la fila? Sólo respondes sí o no.',
+    params: [['elemento', 'Lo que buscas. Se compara con ===.']],
+    controls: [{ id: 'val', label: 'Elemento a buscar', type: 'text', def: 'uva' }],
+    code: p => `frutas.includes(${q(p.val)})`,
+    run: (arr, p) => scanRun(arr, p.val, 'includes'),
+    warn: 'Sólo responde true o false. Si necesitas saber la posición, usa indexOf. También distingue mayúsculas.',
+    reto: { q: '¿Qué muestra la consola?', code: 'const a = ["Ana", "Luis"];\nconsole.log(a.includes("ana"));', opts: ['true', 'false', '-1', '0'], ans: 1, why: 'includes distingue mayúsculas: "ana" no es igual a "Ana", así que devuelve false.', ev: '(()=>{const a=["Ana","Luis"];return a.includes("ana")})()' }
+  },
+  {
+    id: 'find', name: 'find', group: 'buscar', v: 'numeros', base: [4, 9, 12, 7, 20], mut: false,
+    args: 'elemento => condición', retShort: 'el elemento, o undefined',
+    simple: 'Devuelve el primer elemento que cumple una condición.',
+    analogy: 'Recorrer la fila y parar en el primer estudiante que cumple lo que pediste.',
+    params: [['función (callback)', 'Recibe cada elemento y devuelve true o false.']],
+    controls: [{ id: 'cb', label: 'Condición (callback)', type: 'select', def: 'mayor10', opts: predOpts }],
+    code: p => `numeros.find(${PRED[p.cb].txt})`,
+    run: (arr, p) => predRun(arr, PRED[p.cb], 'find'),
+    warn: 'Si ninguno cumple, find devuelve undefined. Devuelve el elemento, no su posición: para la posición usa findIndex.',
+    reto: { q: '¿Qué muestra la consola?', code: 'const n = [4, 9, 12, 7];\nconsole.log(n.find(x => x > 8));', opts: ['9', '12', '1', '[9, 12]'], ans: 0, why: 'find devuelve el primero que cumple x > 8. El 4 no cumple y el 9 sí, así que devuelve 9 y no sigue buscando.', ev: '(()=>{const n=[4,9,12,7];return n.find(x=>x>8)})()' }
+  },
+  {
+    id: 'findIndex', name: 'findIndex', group: 'buscar', v: 'numeros', base: [4, 9, 12, 7, 20], mut: false,
+    args: 'elemento => condición', retShort: 'un índice, o -1',
+    simple: 'Devuelve la posición del primer elemento que cumple una condición.',
+    analogy: 'Igual que find, pero en vez de decir quién es, dices en qué puesto de la fila está.',
+    params: [['función (callback)', 'Recibe cada elemento y devuelve true o false.']],
+    controls: [{ id: 'cb', label: 'Condición (callback)', type: 'select', def: 'mayor10', opts: predOpts }],
+    code: p => `numeros.findIndex(${PRED[p.cb].txt})`,
+    run: (arr, p) => predRun(arr, PRED[p.cb], 'findIndex'),
+    warn: 'Devuelve -1 si ninguno cumple. Pregunta siempre if (indice !== -1): el índice 0 también es una posición válida.',
+    reto: { q: '¿Qué muestra la consola?', code: 'const n = [4, 9, 12, 7];\nconsole.log(n.findIndex(x => x > 10));', opts: ['2', '12', '1', '-1'], ans: 0, why: 'El primero que cumple x > 10 es el 12, que está en el índice 2. findIndex devuelve la posición, no el valor.', ev: '(()=>{const n=[4,9,12,7];return n.findIndex(x=>x>10)})()' }
+  },
+  {
+    id: 'some', name: 'some', group: 'buscar', v: 'numeros', base: [4, 9, 12, 7, 20], mut: false,
+    args: 'elemento => condición', retShort: 'true o false',
+    simple: 'Pregunta si al menos un elemento cumple una condición.',
+    analogy: 'Preguntar al curso: ¿alguien trajo calculadora?',
+    params: [['función (callback)', 'Recibe cada elemento y devuelve true o false.']],
+    controls: [{ id: 'cb', label: 'Condición (callback)', type: 'select', def: 'mayor10', opts: predOpts }],
+    code: p => `numeros.some(${PRED[p.cb].txt})`,
+    run: (arr, p) => predRun(arr, PRED[p.cb], 'some'),
+    warn: 'Con un arreglo vacío, some siempre devuelve false: no hay nadie que cumpla.',
+    reto: { q: '¿Qué muestra la consola?', code: 'const n = [2, 4, 6];\nconsole.log(n.some(x => x % 2 !== 0));', opts: ['false', 'true', '[]', 'undefined'], ans: 0, why: 'x % 2 !== 0 pregunta si el número es impar. Todos son pares, así que ninguno cumple y some devuelve false.', ev: '(()=>{const n=[2,4,6];return n.some(x=>x%2!==0)})()' }
+  },
+  {
+    id: 'every', name: 'every', group: 'buscar', v: 'numeros', base: [4, 9, 12, 7, 20], mut: false,
+    args: 'elemento => condición', retShort: 'true o false',
+    simple: 'Pregunta si todos los elementos cumplen una condición.',
+    analogy: 'Preguntar al curso: ¿todos hicieron la tarea?',
+    params: [['función (callback)', 'Recibe cada elemento y devuelve true o false.']],
+    controls: [{ id: 'cb', label: 'Condición (callback)', type: 'select', def: 'positivo', opts: predOpts }],
+    code: p => `numeros.every(${PRED[p.cb].txt})`,
+    run: (arr, p) => predRun(arr, PRED[p.cb], 'every'),
+    warn: 'Con un arreglo vacío, every devuelve true, porque no hay ningún elemento que falle.',
+    reto: { q: '¿Qué muestra la consola?', code: 'const n = [2, 4, 6];\nconsole.log(n.every(x => x % 2 === 0));', opts: ['true', 'false', '3', '[2, 4, 6]'], ans: 0, why: 'Los tres números son pares, así que todos cumplen la condición y every devuelve true.', ev: '(()=>{const n=[2,4,6];return n.every(x=>x%2===0)})()' }
+  },
+  {
+    id: 'map', name: 'map', group: 'transformar', v: 'numeros', base: [3, 5, 8, 10], mut: false, tall: true,
+    args: 'elemento => nuevoValor', retShort: 'un arreglo nuevo',
+    simple: 'Crea un arreglo nuevo aplicando una función a cada elemento.',
+    analogy: 'Una fotocopiadora que cambia cada hoja: entra una fila y sale otra fila del mismo tamaño.',
+    params: [['función (callback)', 'Recibe cada elemento y devuelve su nuevo valor.']],
+    controls: [{ id: 'cb', label: 'Transformación (callback)', type: 'select', def: 'doble', opts: trOpts }],
+    code: p => `numeros.map(${TR[p.cb].txt})`,
+    run(arr, p) {
+      const t = TR[p.cb], out = arr.map(t.fn), lab = 'Arreglo nuevo';
+      const frames = [{ cells: cells(arr), res: [], resLabel: lab, note: 'map recorre cada elemento, le aplica la función y guarda el resultado en un arreglo nuevo.' }];
+      arr.forEach((n, i) => {
+        frames.push({ cells: arr.map((v, j) => ({ v, c: j === i ? 'cmp cur' : '' })), res: out.slice(0, i + 1).map(v => ({ v, c: 'new' })), resLabel: lab, note: `n = ${fmt(n)} → ${t.ex(n)} = ${fmt(out[i])}. Se guarda en el índice ${i} del arreglo nuevo.` });
+      });
+      frames.push({ cells: cells(arr), res: cells(out), resLabel: lab, note: 'Terminó: map devuelve el arreglo nuevo, siempre con la misma cantidad de elementos. El original no cambió.' });
+      return { arr, ret: out, frames };
+    },
+    warn: 'map siempre devuelve un arreglo con la misma cantidad de elementos y no cambia el original. Si no guardas el resultado, no hiciste nada útil.',
+    reto: { q: '¿Qué muestra la consola?', code: 'const n = [1, 2, 3];\nconst r = n.map(x => x * 10);\nconsole.log(r);', opts: ['[10, 20, 30]', '[1, 2, 3]', '60', '[10]'], ans: 0, why: 'map aplica x * 10 a cada elemento y devuelve un arreglo nuevo con los tres resultados.', ev: '(()=>{const n=[1,2,3];return n.map(x=>x*10)})()' }
+  },
+  {
+    id: 'filter', name: 'filter', group: 'transformar', v: 'numeros', base: [4, 9, 12, 7, 20], mut: false, tall: true,
+    args: 'elemento => condición', retShort: 'un arreglo nuevo',
+    simple: 'Crea un arreglo nuevo sólo con los elementos que cumplen una condición.',
+    analogy: 'Un colador: sólo pasan los que cumplen la condición.',
+    params: [['función (callback)', 'Recibe cada elemento y devuelve true (se queda) o false (se va).']],
+    controls: [{ id: 'cb', label: 'Condición (callback)', type: 'select', def: 'par', opts: predOpts }],
+    code: p => `numeros.filter(${PRED[p.cb].txt})`,
+    run: (arr, p) => predRun(arr, PRED[p.cb], 'filter'),
+    warn: 'El arreglo nuevo puede tener menos elementos o incluso quedar vacío ([]). El original no cambia.',
+    reto: { q: '¿Qué muestra la consola?', code: 'const n = [5, 12, 8, 20];\nconsole.log(n.filter(x => x >= 10));', opts: ['[12, 20]', '[5, 8]', '2', '[12, 8, 20]'], ans: 0, why: 'filter se queda con los que cumplen x >= 10: el 12 y el 20.', ev: '(()=>{const n=[5,12,8,20];return n.filter(x=>x>=10)})()' }
+  },
+  {
+    id: 'reduce', name: 'reduce', group: 'transformar', v: 'numeros', base: [3, 5, 8, 10], mut: false, tall: true,
+    args: '(acc, elemento) => nuevoAcc, valorInicial', retShort: 'un solo valor',
+    simple: 'Resume todo el arreglo en un solo valor.',
+    analogy: 'Ir sumando en una calculadora: cada número se mezcla con el total que llevas.',
+    params: [['función (callback)', 'Recibe el acumulador y el elemento; devuelve el nuevo acumulador.'], ['valor inicial', 'Con qué valor empieza el acumulador.']],
+    controls: [{ id: 'cb', label: 'Operación (callback)', type: 'select', def: 'suma', opts: opsOpts }],
+    code: p => `numeros.reduce(${OPS[p.cb].txt}, ${OPS[p.cb].init})`,
+    run(arr, p) {
+      const o = OPS[p.cb];
+      let acc = o.init;
+      const frames = [{ cells: cells(arr), aux: { label: 'acc', v: acc }, note: `reduce empieza con el valor inicial: acc = ${acc}.` }];
+      arr.forEach((n, i) => {
+        const next = o.fn(acc, n);
+        frames.push({ cells: arr.map((v, j) => ({ v, c: j === i ? 'cmp cur' : '' })), aux: { label: 'acc', v: next }, note: `acc = ${fmt(acc)}, n = ${fmt(n)} → ${o.ex(acc, n)} = ${fmt(next)}. Ahora acc vale ${fmt(next)}.` });
+        acc = next;
+      });
+      frames.push({ cells: cells(arr), aux: { label: 'acc', v: acc }, note: `Terminó: reduce devuelve el último valor de acc: ${fmt(acc)}. El arreglo no cambió.` });
+      return { arr, ret: acc, frames };
+    },
+    warn: 'Si no pones valor inicial, reduce usa el primer elemento como acumulador y empieza desde el segundo; con un arreglo vacío da error. Mejor escríbelo siempre.',
+    reto: { q: '¿Qué muestra la consola?', code: 'const n = [1, 2, 3, 4];\nconsole.log(n.reduce((acc, x) => acc + x, 10));', opts: ['20', '10', '24', '4'], ans: 0, why: 'acc empieza en 10 y va sumando: 10 + 1 + 2 + 3 + 4 = 20.', ev: '(()=>{const n=[1,2,3,4];return n.reduce((acc,x)=>acc+x,10)})()' }
+  },
+  {
+    id: 'forEach', name: 'forEach', group: 'transformar', v: 'numeros', base: [3, 5, 8, 10], mut: false, tall: true,
+    args: 'elemento => acción', retShort: 'undefined (nada)',
+    simple: 'Ejecuta una acción con cada elemento, uno por uno.',
+    analogy: 'Pasar lista: nombras a cada estudiante, uno por uno, sin guardar nada nuevo.',
+    params: [['función (callback)', 'Recibe cada elemento y hace algo con él.']],
+    controls: [{ id: 'cb', label: 'Acción (callback)', type: 'select', def: 'doble', opts: actOpts }],
+    code: p => `numeros.forEach(${ACT[p.cb].txt})`,
+    run(arr, p) {
+      const a = ACT[p.cb], log = [];
+      const frames = [{ cells: cells(arr), log: [], note: 'forEach recorre cada elemento y ejecuta la función. No crea ningún arreglo nuevo.' }];
+      arr.forEach((n, i) => {
+        log.push(a.line(n));
+        frames.push({ cells: arr.map((v, j) => ({ v, c: j === i ? 'cmp cur' : '' })), log: [...log], note: `n = ${fmt(n)} → la función escribe en la consola: ${a.line(n)}` });
+      });
+      frames.push({ cells: cells(arr), log: [...log], note: 'Terminó. forEach devuelve undefined: sirve para hacer algo con cada elemento, no para crear resultados. El arreglo no cambió.' });
+      return { arr, ret: undefined, frames };
+    },
+    warn: 'forEach devuelve undefined, así que no sirve para guardar resultados: para eso usa map. Tampoco se puede detener con break.',
+    reto: { q: '¿Qué muestra la consola?', code: 'const n = [1, 2, 3];\nconst r = n.forEach(x => x * 2);\nconsole.log(r);', opts: ['undefined', '[2, 4, 6]', '[1, 2, 3]', '6'], ans: 0, why: 'forEach siempre devuelve undefined. Para obtener [2, 4, 6] tendrías que usar map.', ev: '(()=>{const n=[1,2,3];return n.forEach(x=>x*2)})()' }
+  },
+  {
+    id: 'sort', name: 'sort', group: 'ordenar', v: 'numeros', base: [10, 9, 100, 1, 25], mut: true,
+    args: '(a, b) => a - b', retShort: 'el mismo arreglo, ordenado',
+    simple: 'Ordena los elementos del arreglo.',
+    analogy: 'Ordenar la fila por estatura (o por el criterio que pidas).',
+    params: [['función de comparación', 'Opcional. (a, b) => a - b ordena números de menor a mayor.']],
+    controls: [{ id: 'mode', label: 'Cómo ordenar', type: 'select', def: 'texto', opts: [{ v: 'texto', l: 'sin función: sort()' }, { v: 'asc', l: 'menor a mayor: (a, b) => a - b' }, { v: 'desc', l: 'mayor a menor: (a, b) => b - a' }] }],
+    code: p => p.mode === 'asc' ? 'numeros.sort((a, b) => a - b)' : p.mode === 'desc' ? 'numeros.sort((a, b) => b - a)' : 'numeros.sort()',
+    run(arr, p) {
+      const out = p.mode === 'asc' ? [...arr].sort((a, b) => a - b) : p.mode === 'desc' ? [...arr].sort((a, b) => b - a) : [...arr].sort();
+      const f = [{ cells: cells(arr), note: 'Así está el arreglo antes de ordenar.' }];
+      if (p.mode === 'asc' || p.mode === 'desc') {
+        f.push({ cells: cells(arr, 'hit'), note: p.mode === 'asc' ? 'JS compara pares de elementos con la función. Si a - b es negativo, a va antes; si es positivo, b va antes.' : 'Con b - a se invierte el criterio: si b - a es negativo, a va antes. Así los más grandes quedan primero.' });
+        f.push({ cells: out.map(v => ({ v, c: 'move' })), note: `Quedó ordenado como números: ${fmt(out)}. El arreglo original cambió. sort devuelve ese mismo arreglo.` });
+      } else {
+        f.push({ cells: arr.map(v => ({ v: String(v), c: 'cmp' })), note: 'Sin función, JS convierte cada elemento a texto antes de comparar. Como texto, "10" va antes que "9" porque "1" va antes que "9".' });
+        f.push({ cells: out.map(v => ({ v, c: 'move' })), note: `Quedó ordenado como texto, no como números: ${fmt(out)}. Para ordenar números usa una función de comparación. El arreglo original cambió.` });
+      }
+      return { arr: out, ret: out, frames: f };
+    },
+    warn: 'Sin función de comparación, sort ordena como texto: el 100 queda antes que el 25. Y además modifica el arreglo original.',
+    reto: { q: '¿Qué muestra la consola?', code: 'const n = [5, 25, 100];\nn.sort();\nconsole.log(n);', opts: ['[5, 25, 100]', '[100, 25, 5]', '[25, 5, 100]', '[100, 5, 25]'], ans: 1, why: 'Sin función, sort compara como texto: "100" va antes que "25", y "25" antes que "5". Queda [100, 25, 5].', ev: '(()=>{const n=[5,25,100];n.sort();return n})()' }
+  },
+  {
+    id: 'reverse', name: 'reverse', group: 'ordenar', v: 'letras', base: ['A', 'B', 'C', 'D', 'E'], mut: true,
+    args: '', retShort: 'el mismo arreglo, invertido',
+    simple: 'Invierte el orden de los elementos.',
+    analogy: 'Darle la vuelta a la fila: el último queda primero.',
+    params: [],
+    controls: [],
+    code: () => 'letras.reverse()',
+    run(arr) {
+      const out = [...arr].reverse();
+      return { arr: out, ret: out, frames: [
+        { cells: cells(arr), note: 'Así está el arreglo antes.' },
+        { cells: out.map(v => ({ v, c: 'move' })), note: 'El primero pasa a ser el último, el segundo el penúltimo, y así hasta el final. El arreglo original cambió.' },
+        { cells: cells(out), note: 'reverse devuelve ese mismo arreglo ya invertido (no una copia).' }
+      ] };
+    },
+    warn: 'reverse modifica el arreglo original y lo devuelve: es el mismo arreglo, no una copia. Si ejecutas reverse dos veces, vuelve a quedar como al principio.',
+    reto: { q: '¿Qué muestra la consola?', code: 'const a = [1, 2, 3];\nconst b = a.reverse();\nconsole.log(a);', opts: ['[3, 2, 1]', '[1, 2, 3]', 'undefined', '[2, 1, 3]'], ans: 0, why: 'reverse modifica el arreglo original, así que a ahora es [3, 2, 1]. b es ese mismo arreglo.', ev: '(()=>{const a=[1,2,3];a.reverse();return a})()' }
+  }
+];
+
+const EXTRA = [
+  { q: '¿Qué muestra la consola?', code: 'const a = ["x", "y", "z"];\nconsole.log(a[1]);', opts: ['"y"', '"x"', '"z"', '1'], ans: 0, why: 'Los índices empiezan en 0: a[0] es "x", a[1] es "y" y a[2] es "z".', ev: '(()=>{const a=["x","y","z"];return a[1]})()' },
+  { q: '¿Qué muestra la consola?', code: 'const a = [7, 8, 9, 10];\nconsole.log(a.length);', opts: ['4', '3', '10', '5'], ans: 0, why: 'length cuenta cuántos elementos hay: son 4. El último índice es length - 1, o sea 3.', ev: '(()=>{const a=[7,8,9,10];return a.length})()' },
+  { q: '¿Qué muestra la consola?', code: 'const a = ["a", "b", "c"];\nconsole.log(a[3]);', opts: ['undefined', '"c"', '3', '-1'], ans: 0, why: 'Los índices válidos son 0, 1 y 2. Leer un casillero que no existe da undefined.', ev: '(()=>{const a=["a","b","c"];return a[3]})()' },
+  { q: '¿Qué muestra la consola?', code: 'const a = ["a", "b", "c"];\nconsole.log(a[a.length - 1]);', opts: ['"c"', '"b"', '3', 'undefined'], ans: 0, why: 'length vale 3, así que a.length - 1 es 2: el índice del último elemento.', ev: '(()=>{const a=["a","b","c"];return a[a.length-1]})()' }
+];
+
+const WANT = [
+  ['Agregar algo al final', ['push']], ['Agregar algo al inicio', ['unshift']], ['Agregar o quitar en cualquier lugar', ['splice']],
+  ['Quitar el último', ['pop']], ['Quitar el primero', ['shift']],
+  ['Copiar una parte', ['slice']], ['Unir dos arreglos', ['concat']], ['Convertir a texto', ['join']],
+  ['Saber si un dato está', ['includes']], ['Saber en qué posición está', ['indexOf']],
+  ['Traer el primero que cumple una condición', ['find', 'findIndex']], ['Preguntar si alguno o todos cumplen', ['some', 'every']],
+  ['Cambiar cada elemento', ['map']], ['Quedarme sólo con algunos', ['filter']],
+  ['Resumir todo en un solo valor', ['reduce']], ['Hacer algo con cada elemento', ['forEach']],
+  ['Ordenar', ['sort']], ['Darle la vuelta', ['reverse']]
+];
+
+const GROUPS = [
+  { id: 'agregar', name: 'Agregar y quitar' },
+  { id: 'copiar', name: 'Copiar y unir' },
+  { id: 'buscar', name: 'Buscar y preguntar' },
+  { id: 'transformar', name: 'Recorrer y transformar' },
+  { id: 'ordenar', name: 'Ordenar' }
+];
+</script>
+
+<script>
+(() => {
+  const $ = (s, el = document) => el.querySelector(s);
+  const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const main = $('#main'), nav = $('#nav'), menu = $('#menu');
+  const mq = window.matchMedia('(min-width: 901px)');
+  let S = null, Q = null;
+  let visited = new Set();
+  try { visited = new Set(JSON.parse(localStorage.getItem('arreglos-visitados') || '[]')); } catch (e) { /* sin almacenamiento */ }
+  const saveVisited = () => { try { localStorage.setItem('arreglos-visitados', JSON.stringify([...visited])); } catch (e) { /* sin almacenamiento */ } };
+  const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+  const groupName = id => GROUPS.find(g => g.id === id).name;
+
+  function updateProgress() {
+    $('#progText').textContent = `${visited.size} de ${M.length} métodos vistos`;
+    $('#progBar').style.width = (100 * visited.size / M.length) + '%';
+  }
+
+  function buildNav() {
+    let h = `<div class="ng"><h3>Empieza aquí</h3><a class="nl" href="#inicio" data-id="inicio">¿Qué es un arreglo?</a></div>`;
+    GROUPS.forEach(g => {
+      h += `<div class="ng"><h3>${g.name}</h3>` + M.filter(m => m.group === g.id).map(m => `<a class="nl mono" href="#${m.id}" data-id="${m.id}"><span class="vd"></span>${m.name}()</a>`).join('') + '</div>';
+    });
+    h += `<div class="ng"><h3>Repasa</h3><a class="nl" href="#resumen" data-id="resumen">Tabla resumen</a><a class="nl" href="#quiz" data-id="quiz">Quiz final</a></div>`;
+    nav.innerHTML = h;
+    nav.addEventListener('click', e => { if (e.target.closest('.nl') && !mq.matches) menu.open = false; });
+  }
+  function updateNav(id, title) {
+    nav.querySelectorAll('.nl').forEach(a => {
+      const on = a.dataset.id === id;
+      if (on) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
+      a.classList.toggle('seen', visited.has(a.dataset.id));
+    });
+    $('#curName').textContent = title;
+  }
+
+  /* ---------- stage ---------- */
+  function rowHTML(list, label) {
+    const inner = list.length
+      ? list.map((c, i) => `<div class="slot"><span class="idx">${i}</span><div class="cell ${c.c || ''}" title="${esc(fmt(c.v))}"><span>${esc(fmt(c.v))}</span></div></div>`).join('')
+      : `<div class="empty">[ ] vacío: no hay casilleros</div>`;
+    return `<div><div class="rowlabel">${esc(label)}</div><div class="row">${inner}</div></div>`;
+  }
+  function frameHTML(f, vname) {
+    let h = rowHTML(f.cells, vname);
+    if (f.res) h += rowHTML(f.res, f.resLabel || 'Arreglo nuevo');
+    if (f.text !== undefined) h += `<div><div class="rowlabel">Texto resultante</div><div class="pill"><span>${esc(fmt(f.text))}</span></div></div>`;
+    if (f.aux) h += `<div><div class="pill"><small>${esc(f.aux.label)}</small><span>${esc(fmt(f.aux.v))}</span></div></div>`;
+    if (f.log) h += `<div><div class="rowlabel">Consola</div><div class="console">${f.log.length ? f.log.map(l => '&gt; ' + esc(l)).join('<br>') : '&nbsp;'}</div></div>`;
+    return h;
+  }
+
+  /* ---------- retos ---------- */
+  function retoHTML(r) {
+    return `<div class="reto">${r.code ? `<pre class="sig"><code>${esc(r.code)}</code></pre>` : ''}<p class="rq">${esc(r.q)}</p><div class="opts">${r.opts.map((o, k) => `<button type="button" class="opt" data-k="${k}">${esc(o)}</button>`).join('')}</div><div class="fb" hidden></div></div>`;
+  }
+  function bindReto(root, r, onAnswer) {
+    root.addEventListener('click', e => {
+      const b = e.target.closest('.opt');
+      if (!b || root.dataset.done) return;
+      root.dataset.done = '1';
+      const k = +b.dataset.k, ok = k === r.ans;
+      root.querySelectorAll('.opt').forEach((x, j) => { x.disabled = true; if (j === r.ans) x.classList.add('ok'); else if (j === k) x.classList.add('bad'); });
+      const fb = $('.fb', root);
+      fb.hidden = false;
+      fb.innerHTML = `<strong>${ok ? '¡Correcto!' : 'Casi.'}</strong> ${esc(r.why)}`;
+      if (onAnswer) onAnswer(ok);
+    });
+  }
+
+  /* ---------- intro ---------- */
+  function viewIntro() {
+    S = null;
+    const arr = ['Ana', 'Luis', 'Marta', 'Pedro', 'Sofía'];
+    let sel = 2;
+    main.innerHTML = `
+      <article>
+        <p class="eyebrow">Empieza aquí</p>
+        <h2 class="title">¿Qué es un arreglo?</h2>
+        <p class="lead">Un arreglo (en inglés, <i>array</i>) es una lista ordenada de datos. Imagina una fila de casilleros: cada uno guarda un dato y tiene un número pegado en la puerta.</p>
+        <section class="play" aria-labelledby="ih">
+          <h3 id="ih">Toca un casillero</h3>
+          <div class="ctl">
+            <label class="fld" for="ix"><span>O escribe un índice</span><input id="ix" type="number" step="1" value="2"></label>
+          </div>
+          <div class="codeline" id="iCode"></div>
+          <div class="stage" id="iStage"></div>
+          <div class="outs" id="iOuts"></div>
+          <p class="note" id="iNote" aria-live="polite"></p>
+        </section>
+        <div class="cards">
+          <section class="sec"><h3>El número se llama índice</h3><p>Empieza en 0, no en 1. El primer casillero es el 0, el segundo es el 1, y así sigue.</p></section>
+          <section class="sec"><h3>length cuenta los casilleros</h3><p>Si hay 5 casilleros, <code>length</code> vale 5 y el último índice es 4, es decir, <code>length - 1</code>.</p></section>
+          <section class="sec"><h3>Los métodos son acciones</h3><p>Se escriben <code>arreglo.metodo()</code>. Algunos cambian el arreglo original; otros dejan el original igual y devuelven uno nuevo. En cada lección verás cuál es el caso.</p></section>
+        </div>
+        <section class="sec" style="margin-top:16px">
+          <h3>Palabras que vas a ver</h3>
+          <dl class="gloss">
+            <dt>Elemento</dt><dd>Cada dato guardado en un casillero.</dd>
+            <dt>Índice</dt><dd>El número de posición de un elemento. Empieza en 0.</dd>
+            <dt>Método</dt><dd>Una acción que sabe hacer un arreglo, como <code>push()</code> o <code>sort()</code>.</dd>
+            <dt>Parámetro</dt><dd>El dato que le das al método entre paréntesis.</dd>
+            <dt>Devuelve</dt><dd>Lo que el método te entrega cuando termina (en inglés, <i>return</i>).</dd>
+            <dt>Mutar</dt><dd>Cambiar el arreglo original. Verás una etiqueta amarilla cuando un método lo hace.</dd>
+            <dt>Callback</dt><dd>Una función que le pasas a un método para que la use con cada elemento. Por ejemplo: <code>n => n &gt; 10</code>.</dd>
+          </dl>
+        </section>
+        <section class="sec" style="margin-top:16px">
+          <h3>Cómo usar esta app</h3>
+          <ol class="steps">
+            <li>Elige un método en el menú.</li>
+            <li>Cambia los valores y presiona <b>Ejecutar</b>, o usa <b>Paso a paso</b> para avanzar tú mismo.</li>
+            <li>Fíjate en lo que <b>devuelve</b> y en si el arreglo cambió.</li>
+            <li>Contesta el mini reto y, al final, haz el quiz.</li>
+          </ol>
+        </section>
+        <div class="pn"><span></span><a class="btn primary" href="#push">Empezar con push() →</a></div>
+      </article>`;
+    const ix = $('#ix');
+    function draw() {
+      $('#iStage').innerHTML = `<div><div class="rowlabel">estudiantes</div><div class="row">${arr.map((v, i) => `<button type="button" class="slot sb" data-i="${i}" aria-label="Casillero ${i}: ${esc(v)}"><span class="idx">${i}</span><span class="cell ${i === sel ? 'hit' : ''}"><span>${esc(fmt(v))}</span></span></button>`).join('')}</div></div>`;
+      const val = arr[sel];
+      $('#iCode').textContent = `estudiantes[${sel}]`;
+      $('#iOuts').innerHTML = `
+        <div class="out"><span class="olabel">Leer un casillero</span><code>estudiantes[${esc(sel)}]</code> → <code>${esc(fmt(val))}</code></div>
+        <div class="out"><span class="olabel">Cuántos hay</span><code>estudiantes.length</code> → <code>${arr.length}</code></div>
+        <div class="out"><span class="olabel">El último casillero</span><code>estudiantes[estudiantes.length - 1]</code> → <code>${esc(fmt(arr[arr.length - 1]))}</code></div>`;
+      $('#iNote').textContent = val === undefined
+        ? `No existe un casillero con el índice ${sel}. Cuando lees un índice que no existe, JavaScript devuelve undefined.`
+        : `El casillero ${sel} guarda ${fmt(val)}. Es el elemento número ${sel + 1} de la fila, pero su índice es ${sel}.`;
+    }
+    $('#iStage').addEventListener('click', e => {
+      const b = e.target.closest('.sb');
+      if (!b) return;
+      sel = +b.dataset.i; ix.value = sel; draw();
+    });
+    ix.addEventListener('input', () => { const n = parseInt(ix.value, 10); sel = Number.isFinite(n) ? n : 0; draw(); });
+    draw();
+  }
+
+  /* ---------- lesson ---------- */
+  function ctlHTML(c) {
+    const id = 'c-' + c.id;
+    if (c.type === 'select') return `<label class="fld" for="${id}"><span>${c.label}</span><select id="${id}">${c.opts.map(o => `<option value="${esc(o.v)}"${o.v === c.def ? ' selected' : ''}>${esc(o.l)}</option>`).join('')}</select></label>`;
+    if (c.type === 'number') return `<label class="fld" for="${id}"><span>${c.label}</span><input id="${id}" type="number" step="1" value="${c.def == null ? '' : c.def}" placeholder="${esc(c.ph || '')}"></label>`;
+    return `<label class="fld" for="${id}"><span>${c.label}</span><input id="${id}" type="text" maxlength="${c.max || 14}" value="${esc(c.def)}" placeholder="${esc(c.ph || '')}" autocomplete="off"></label>`;
+  }
+
+  function viewMethod(m) {
+    visited.add(m.id); saveVisited(); updateProgress();
+    const i = M.indexOf(m), prev = M[i - 1], next = M[i + 1];
+    S = { m, arr: [...m.base], frames: null, i: 0, timer: null, ret: undefined };
+    const sigHTML = `<span class="to">arreglo</span><span class="td">.</span><span class="tm">${m.name}</span><span class="td">(</span><span class="ta">${esc(m.args)}</span><span class="td">)</span>`;
+    main.innerHTML = `
+      <article>
+        <header>
+          <p class="eyebrow">${groupName(m.group)}</p>
+          <h2 class="mname" id="mh" tabindex="-1">${m.name}<span>()</span></h2>
+          <p class="lead">${m.simple}</p>
+          <div class="badges">
+            ${m.mut ? '<span class="badge b-mut">Cambia el arreglo original</span>' : '<span class="badge b-safe">No cambia el original</span>'}
+            <span class="badge b-ret">Devuelve: ${m.retShort}</span>
+          </div>
+        </header>
+        <section class="play" aria-labelledby="ph">
+          <h3 id="ph">Pruébalo</h3>
+          <form class="ctl" id="ctl" autocomplete="off">
+            ${m.controls.map(ctlHTML).join('')}
+            <div class="btns">
+              <button class="btn primary" type="submit">Ejecutar</button>
+              <button class="btn" type="button" id="stepBtn">Paso a paso</button>
+              <button class="btn ghost" type="button" id="resetBtn">Reiniciar arreglo</button>
+            </div>
+          </form>
+          <div class="codeline" id="codeLine" aria-label="Código que se ejecuta"></div>
+          <div class="stage${m.tall ? ' tall' : ''}" id="stage"></div>
+          <div class="dots" id="dots"></div>
+          <p class="note" id="note" aria-live="polite"></p>
+          <div class="outs">
+            <div class="out"><span class="olabel">Devuelve</span><span class="oval" id="outRet">—</span><small id="outType"></small></div>
+            <div class="out"><span class="olabel">Ahora el arreglo es</span><code id="outArr"></code></div>
+          </div>
+        </section>
+        <div class="info">
+          <section class="sec">
+            <h3>Cómo se escribe</h3>
+            <div class="sig">${sigHTML}</div>
+            ${m.params.length ? `<dl class="params">${m.params.map(p => `<dt>${esc(p[0])}</dt><dd>${esc(p[1])}</dd>`).join('')}</dl>` : '<p>No necesita nada: se escribe con los paréntesis vacíos.</p>'}
+          </section>
+          <section class="sec">
+            <h3>Para imaginarlo</h3>
+            <p>${m.analogy}</p>
+            <p>${m.mut ? 'Este método <b>cambia el arreglo original</b>: después de ejecutarlo, el arreglo ya no es el mismo.' : 'Este método <b>no toca el arreglo original</b>: te da un resultado aparte.'}</p>
+            <p>Devuelve ${m.retShort}. Míralo en el recuadro «Devuelve» cada vez que ejecutes.</p>
+          </section>
+        </div>
+        <div class="warn"><strong>Ojo con esto</strong><p>${esc(m.warn)}</p></div>
+        <section class="retobox" aria-labelledby="rh">
+          <h3 id="rh">Mini reto</h3>
+          <div id="retoSlot">${retoHTML(m.reto)}</div>
+        </section>
+        <nav class="pn" aria-label="Lección anterior y siguiente">
+          ${prev ? `<a class="btn" href="#${prev.id}">← ${prev.name}()</a>` : '<a class="btn" href="#inicio">← ¿Qué es un arreglo?</a>'}
+          ${next ? `<a class="btn primary" href="#${next.id}">${next.name}() →</a>` : '<a class="btn primary" href="#resumen">Tabla resumen →</a>'}
+        </nav>
+      </article>`;
+
+    const curParams = () => {
+      const p = {};
+      m.controls.forEach(c => {
+        const el = $('#c-' + c.id);
+        if (c.type === 'number') { const n = parseInt(el.value, 10); p[c.id] = el.value.trim() === '' || Number.isNaN(n) ? null : n; }
+        else p[c.id] = el.value;
+      });
+      return p;
+    };
+    const setCode = () => {
+      const code = m.code(curParams());
+      $('#codeLine').innerHTML = esc(code).replace(`.${m.name}(`, `.<b>${m.name}</b>(`);
+    };
+    const lastIdx = () => S.frames.length - 1;
+    const updateStepBtn = () => {
+      const b = $('#stepBtn');
+      if (!b) return;
+      b.textContent = S.frames && S.i < lastIdx() ? `Siguiente paso (${S.i + 2}/${S.frames.length})` : 'Paso a paso';
+    };
+    const showBase = () => {
+      $('#stage').innerHTML = frameHTML({ cells: cells(S.arr) }, m.v);
+      $('#dots').innerHTML = '';
+      $('#note').innerHTML = '<span class="step">Listo para probar</span>Elige un valor y presiona Ejecutar. Con «Paso a paso» avanzas tú, un paso cada vez.';
+      $('#outRet').textContent = '—'; $('#outType').textContent = '';
+      $('#outArr').textContent = fmt(S.arr);
+      setCode(); updateStepBtn();
+    };
+    const show = k => {
+      S.i = k;
+      const f = S.frames[k], n = S.frames.length;
+      $('#stage').innerHTML = frameHTML(f, m.v);
+      $('#dots').innerHTML = S.frames.map((_, j) => `<button type="button" class="dotb${j === k ? ' on' : j < k ? ' past' : ''}" data-k="${j}" aria-label="Ir al paso ${j + 1} de ${n}"></button>`).join('');
+      $('#note').innerHTML = `<span class="step">Paso ${k + 1} de ${n}</span>${esc(f.note)}`;
+      if (k === n - 1) {
+        $('#outRet').textContent = fmt(S.ret);
+        $('#outType').textContent = `(${typeEs(S.ret)})`;
+        $('#outArr').textContent = fmt(S.arr);
+      }
+      updateStepBtn();
+    };
+    const begin = () => {
+      clearTimeout(S.timer);
+      const r = m.run(S.arr, curParams());
+      S.frames = r.frames; S.ret = r.ret; S.arr = r.arr;
+      setCode();
+    };
+    const delay = k => Math.max(1300, S.frames[k].note.length * 28);
+    const tick = () => {
+      if (S.i < lastIdx()) { show(S.i + 1); if (S.i < lastIdx()) S.timer = setTimeout(tick, delay(S.i)); }
+    };
+
+    $('#ctl').addEventListener('submit', e => { e.preventDefault(); begin(); show(0); if (lastIdx() > 0) S.timer = setTimeout(tick, delay(0)); });
+    $('#ctl').addEventListener('input', setCode);
+    $('#ctl').addEventListener('change', setCode);
+    $('#stepBtn').addEventListener('click', () => {
+      clearTimeout(S.timer);
+      if (S.frames && S.i < lastIdx()) show(S.i + 1);
+      else { begin(); show(0); }
+    });
+    $('#resetBtn').addEventListener('click', () => { clearTimeout(S.timer); S.arr = [...m.base]; S.frames = null; S.i = 0; showBase(); });
+    $('#dots').addEventListener('click', e => {
+      const b = e.target.closest('.dotb');
+      if (!b) return;
+      clearTimeout(S.timer);
+      const k = +b.dataset.k;
+      show(k);
+      const again = $(`#dots [data-k="${k}"]`);
+      if (again) again.focus();
+    });
+    bindReto($('#retoSlot .reto'), m.reto);
+    showBase();
+  }
+
+  /* ---------- summary ---------- */
+  function viewSummary() {
+    S = null;
+    let filter = 'all';
+    const render = () => {
+      const rows = M.filter(m => filter === 'all' || (filter === 'mut' ? m.mut : !m.mut));
+      main.innerHTML = `
+        <article>
+          <p class="eyebrow">Repasa</p>
+          <h2 class="title">Tabla resumen</h2>
+          <p class="lead">Los 20 métodos en un solo lugar. Fíjate en la columna que dice si cambian el arreglo original.</p>
+          <div class="chips" role="group" aria-label="Filtrar métodos">
+            <button type="button" class="chip" data-f="all" aria-pressed="${filter === 'all'}">Todos</button>
+            <button type="button" class="chip" data-f="mut" aria-pressed="${filter === 'mut'}">Cambian el original</button>
+            <button type="button" class="chip" data-f="safe" aria-pressed="${filter === 'safe'}">No cambian el original</button>
+          </div>
+          <div class="tablewrap"><table>
+            <thead><tr><th>Método</th><th>Qué hace</th><th>¿Cambia el original?</th><th>Devuelve</th></tr></thead>
+            <tbody>${rows.map(m => `<tr><td><a href="#${m.id}">${m.name}()</a></td><td>${m.simple}</td><td>${m.mut ? '<span class="badge b-mut">Sí</span>' : '<span class="badge b-safe">No</span>'}</td><td>${m.retShort}</td></tr>`).join('')}</tbody>
+          </table></div>
+          <section class="sec" style="margin-top:20px">
+            <h3>¿Cuál uso si quiero…?</h3>
+            <ul class="want">${WANT.map(w => `<li>${w[0]}<br>${w[1].map(id => `<a href="#${id}">${id}()</a>`).join('')}</li>`).join('')}</ul>
+          </section>
+          <div class="pn"><a class="btn" href="#reverse">← reverse()</a><a class="btn primary" href="#quiz">Hacer el quiz →</a></div>
+        </article>`;
+      main.querySelector('.chips').addEventListener('click', e => { const b = e.target.closest('.chip'); if (b) { filter = b.dataset.f; render(); } });
+    };
+    render();
+  }
+
+  /* ---------- quiz ---------- */
+  function newQuiz() {
+    const pool = [...M.map(m => ({ ...m.reto, tag: m.name + '()', id: m.id })), ...EXTRA.map(r => ({ ...r, tag: 'Índices y length', id: 'inicio' }))];
+    const qs = shuffle(pool).slice(0, 10).map(r => {
+      const opts = shuffle(r.opts.map((t, k) => ({ t, ok: k === r.ans })));
+      return { q: r.q, code: r.code, opts: opts.map(o => o.t), ans: opts.findIndex(o => o.ok), why: r.why, tag: r.tag, id: r.id };
+    });
+    Q = { qs, i: 0, score: 0, miss: [], done: false };
+  }
+  function viewQuiz() {
+    S = null;
+    if (!Q) newQuiz();
+    const draw = () => {
+      if (Q.done) {
+        let best = null;
+        try { best = parseInt(localStorage.getItem('arreglos-mejor'), 10); } catch (e) { /* sin almacenamiento */ }
+        const n = Q.qs.length;
+        const msg = Q.score >= 9 ? 'Dominas los métodos de arreglos.' : Q.score >= 7 ? 'Vas muy bien. Repasa lo que fallaste y lo tendrás listo.' : Q.score >= 5 ? 'Buen comienzo. Vuelve a las lecciones que fallaste y prueba otra vez.' : 'Todavía hay que practicar. Repite las lecciones con Paso a paso y vuelve a intentarlo.';
+        main.innerHTML = `
+          <article>
+            <p class="eyebrow">Quiz final</p>
+            <h2 class="title">Resultado</h2>
+            <div class="score">${Q.score} de ${n}</div>
+            <p class="lead">${msg}${Number.isFinite(best) ? ` Tu mejor puntaje: ${best} de ${n}.` : ''}</p>
+            ${Q.miss.length ? `<section class="sec"><h3>Repasa estas lecciones</h3><ul class="miss">${[...new Map(Q.miss.map(x => [x.id, x])).values()].map(x => `<li><a href="#${x.id}">${esc(x.tag)}</a></li>`).join('')}</ul></section>` : '<section class="sec"><h3>Sin errores</h3><p>Contestaste todo bien. Prueba de nuevo: las preguntas cambian cada vez.</p></section>'}
+            <div class="pn"><a class="btn" href="#inicio">Volver al inicio</a><button type="button" class="btn primary" id="again">Intentar de nuevo</button></div>
+          </article>`;
+        $('#again').addEventListener('click', () => { newQuiz(); draw(); });
+        return;
+      }
+      const r = Q.qs[Q.i], n = Q.qs.length;
+      main.innerHTML = `
+        <article>
+          <p class="eyebrow">Quiz final</p>
+          <h2 class="title">Pon a prueba lo aprendido</h2>
+          <section class="retobox" style="margin-top:20px">
+            <div class="qhead"><span>Pregunta ${Q.i + 1} de ${n}</span><span>Aciertos: ${Q.score}</span></div>
+            <div class="bar" style="margin:8px 0 4px"><i style="width:${100 * Q.i / n}%"></i></div>
+            <div id="qslot">${retoHTML(r)}</div>
+            <div class="pn" id="qnext" hidden><span></span><button type="button" class="btn primary" id="nextBtn">${Q.i + 1 === n ? 'Ver resultado' : 'Siguiente pregunta'}</button></div>
+          </section>
+        </article>`;
+      bindReto($('#qslot .reto'), r, ok => {
+        if (ok) Q.score++; else Q.miss.push(r);
+        $('#qnext').hidden = false;
+        $('#nextBtn').focus();
+      });
+      $('#nextBtn').addEventListener('click', () => {
+        Q.i++;
+        if (Q.i >= n) {
+          Q.done = true;
+          try { const b = parseInt(localStorage.getItem('arreglos-mejor'), 10); if (!Number.isFinite(b) || Q.score > b) localStorage.setItem('arreglos-mejor', String(Q.score)); } catch (e) { /* sin almacenamiento */ }
+        }
+        draw();
+        window.scrollTo(0, 0);
+      });
+    };
+    draw();
+  }
+
+  /* ---------- router ---------- */
+  function route() {
+    if (S && S.timer) clearTimeout(S.timer);
+    const id = location.hash.slice(1) || 'inicio';
+    const m = M.find(x => x.id === id);
+    let title = '¿Qué es un arreglo?';
+    if (id === 'resumen') { viewSummary(); title = 'Tabla resumen'; }
+    else if (id === 'quiz') { viewQuiz(); title = 'Quiz final'; }
+    else if (m) { viewMethod(m); title = m.name + '()'; }
+    else { viewIntro(); }
+    updateNav(m || id === 'resumen' || id === 'quiz' ? id : 'inicio', title);
+    window.scrollTo(0, 0);
+  }
+
+  window.addEventListener('hashchange', route);
+  mq.addEventListener('change', () => { menu.open = mq.matches; });
+  buildNav();
+  updateProgress();
+  menu.open = mq.matches;
+  route();
+})();
+</script>
+
+</body></html>
